@@ -1,0 +1,105 @@
+<!DOCTYPE HTML>
+<html>
+    <head>
+        <style>
+            body {
+                background-color: #000000;
+                color: #909090
+            }
+            pre .group {
+                color: aqua;
+            }
+            pre .todo {
+                color: white;
+            }
+            pre .done {
+                color: lime;
+            }
+            pre .cancelled {
+                color: red;
+            }
+            pre .pre {
+                white-space: pre;
+                font-family: monospace;
+            }
+            pre .editor {
+                white-space: pre;
+                font-family: monospace;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="editor" contenteditable="false" class="editor"><pre>${{content}}</pre></div>
+        <script>
+            function saveSelection(element) {
+                const selection = window.getSelection();
+                if (selection.rangeCount === 0) return null;
+                const range = selection.getRangeAt(0);
+                const preSelectionRange = range.cloneRange();
+                preSelectionRange.selectNodeContents(element);
+                preSelectionRange.setEnd(range.startContainer, range.startOffset);
+                const start = preSelectionRange.toString().length;
+
+                return { start: start, range: range.cloneRange() };
+            }
+
+            function restoreSelection(element, savedSelection) {
+                if (!savedSelection) return;
+                const { start } = savedSelection;
+                const nodeStack = [element];
+                let charCount = 0;
+                let node, offset;
+
+                while (nodeStack.length) {
+                    node = nodeStack.pop();
+                    if (node.nodeType === 3) { // текстовый узел
+                    if (charCount + node.nodeValue.length >= start) {
+                        offset = start - charCount;
+                        break;
+                    } else {
+                        charCount += node.nodeValue.length;
+                    }
+                    } else {
+                    for (let i = node.childNodes.length - 1; i >= 0; i--) {
+                        nodeStack.push(node.childNodes[i]);
+                    }
+                    }
+                }
+
+                const range = document.createRange();
+                range.setStart(node, offset);
+                range.setEnd(node, offset);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            }
+
+            const editor = document.getElementById('editor');
+            
+            editor.addEventListener('input', () => {
+                const prevHtml = editor.innerHTML;
+                const savedSel = saveSelection(editor);
+                
+                const text  = prevHtml.replace(/<(\/|)span.*?>/gm, "")
+
+                // if (text.includes ("</pre><pre>"))
+                // {
+                //     savedSel.start++;
+                // }
+                
+                // regular expressions for highlightning
+                let html = text
+                    .replace("</pre><pre>", "<br>")
+                    .replace(/((<pre>|<br>)[ \t\r\n]*)([^ \t].+?:)([ \t\r\n]*?(<\/pre>|<br>))/g, '$2<div class="group">$3</div>$4') // group
+                    .replace(/((<pre>|<br>)[ \t\r\n]*)((☐|-).+?)(<\/pre>|<br>)/g, '$1<div class="todo">$3</div>$5') // todo
+                    .replace(/((<pre>|<br>)[ \t\r\n]*)((✔|\+).+?)(<\/pre>|<br>)/g, '$1<div class="done">$3</div>$5') // done
+                    .replace(/((<pre>|<br>)[ \t\r\n]*)((✘|x).+?)(<\/pre>|<br>)/g, '$1<div class="cancelled">$3</div>$5'); // cancelled     
+                console.info (html);
+                // renew content
+                editor.innerHTML = html;
+
+                restoreSelection(editor, savedSel);
+            });
+            </script>
+    </body>
+</html>
