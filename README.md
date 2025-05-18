@@ -27,7 +27,7 @@ config.json must be a valid json file containing single object with the followin
 ```
 #### websrvfileshow_credentials environment variable
 websrvfileshow_credentials environment variable contains credentials for web server authentification in format "user1=password1;user2=password2;...". Using ; or = characters in usernames or passwords is not allowed.
-###filesender
+### filesender
 Configuration is set through the config.json file located in the application directory
 config.json must be a valid json file containing single object with the following elements:
 - **fileName** - path to file which will be send to the web server
